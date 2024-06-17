@@ -1,4 +1,4 @@
-# autoleetcode
+# Autoleetcode
 
 #### 介绍
 使用cefsharp网页自动化读取Leetcode题目，交给不同的大模型处理，自动提交统计正确率
