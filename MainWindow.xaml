@@ -12,7 +12,7 @@
                 <Label Content="模型：" Padding="10,10,0,10"/>
                 <Label x:Name="Model" Content="Qwen-long" FontWeight="Bold" Padding="0,10,10,10"/>
                 <TextBlock Text="页面：" TextAlignment="Center" Padding="0,10,0,10"/>
-                <TextBox x:Name="StartNumber" Text="7" FontWeight="Bold" Padding="0,10,10,10" BorderThickness="0"/>
+                <TextBox x:Name="StartNumber" Text="1" FontWeight="Bold" Padding="0,10,10,10" BorderThickness="0"/>
                 <Label Content="状态：" Padding="0,10,0,10"/>
                 <Label x:Name="Status" Content="初始化" FontWeight="Bold" Padding="0,10,10,10"/>
                 <Label Content="正确率：" Padding="0,10,0,10" />

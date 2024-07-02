@@ -14,6 +14,8 @@ namespace AutoLeetcode
         public string BaseUrl { get; set; } = "https://dashscope.aliyuncs.com/compatible-mode";
         public string ApiKey { get; set; } = "API_KEY";
         public string Model { get; set; } = "qwen-turbo";
+        public string Level { get; set; } = "medium";  // Choose difficulty
+        public string Skip { get; set; } = "1";  // Skip completed questions
 
     }
 

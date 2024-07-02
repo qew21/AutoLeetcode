@@ -45,6 +45,7 @@ namespace AutoLeetcode
         string title = string.Empty;
         string problem = string.Empty;
         string code = string.Empty;
+        string _abstract = string.Empty;
         private TimeSpan _elapsedTime = TimeSpan.Zero;
         private DispatcherTimer _timer;
         int totalCount = 0;
@@ -122,9 +123,19 @@ namespace AutoLeetcode
         {
             long timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             string filePath = $"{timestamp}.jsonl";
-            browser.LoadUrl($"https://leetcode.cn/problemset/?page={StartNumber.Text}");
-            await Task.Delay(5000);
-            string titleScript = @"(async function(){var rowGroupElementAll = document.querySelectorAll('[role=""rowgroup""]');
+            int cnt = 100;
+            while (cnt > 0)
+            {
+                browser.LoadUrl($"https://leetcode.cn/problemset/?page={StartNumber.Text}");
+                await Task.Delay(5000);
+                string compareValue = "==";
+                string start = "0";
+                if (config.Skip != "1")
+                {
+                    compareValue = ">=";
+                    start = "1";
+                }
+                string titleScript = @"(async function(){var rowGroupElementAll = document.querySelectorAll('[role=""rowgroup""]');
             var rowGroupElement = null;
             for (var i = 0; i < rowGroupElementAll.length; i++) {
                 if (rowGroupElementAll[i].childElementCount > 0) {
@@ -134,12 +145,12 @@ namespace AutoLeetcode
             }
             if (rowGroupElement) {
                 var rows = rowGroupElement.children;
-                var result = {""count"": rows.length};
-                for (var i = 0; i < rows.length; i++) {
+                var result = {};
+                for (var i = " + start + @"; i < rows.length; i++) {
                     var link = rows[i].querySelector('a');
                     var difficulty = rows[i].childNodes[4].innerText.trim();
                     var level = getLevelFromString(difficulty);
-                    if (link && rows[i].childNodes[0].childElementCount == 0) {
+                    if (link && rows[i].childNodes[0].childElementCount " + compareValue + @" 0) {
                         result[link.getAttribute('href')] = level;
                     }
                 }
@@ -156,87 +167,93 @@ namespace AutoLeetcode
                     default: return -1;
                 }
             }})();";
-            var titleResponse = await browser.EvaluateScriptAsync(titleScript);
-            try
-            {
-                string titleText = titleResponse.Result.ToString();
-                Dictionary<string, string> result = JsonConvert.DeserializeObject<Dictionary<string, string>>(titleText);
-                int cnt = 10;
-                foreach (var item in result)
+                var titleResponse = await browser.EvaluateScriptAsync(titleScript);
+                try
                 {
-                    if (item.Key == "count")
+                    string titleText = titleResponse.Result.ToString();
+                    Dictionary<string, string> result = JsonConvert.DeserializeObject<Dictionary<string, string>>(titleText);
+
+                    foreach (var item in result)
                     {
-                        continue;
-                    }
-                    if (item.Value == "2")
-                    {
-                        continue;
-                    }
-                    string url = $"https://leetcode.cn{item.Key}";
-                    browser.LoadUrl(url);
-                    Status.Content = "读题";
-                    await Task.Delay(5000);
-                    string solution = await Solve();
-                    bool res = false;
-                    if (!String.IsNullOrEmpty(solution))
-                    {
-                        Status.Content = "解答提交";
-                        for (int i = 3; i > 0; i--)
+                        cnt -= 1;
+                        if (config.Level != "hard" && item.Value == "2")
                         {
-                            await Execute();
-                            await Task.Delay(3000);
-                            res = await GetStatus();
-                            if (res)
+                            continue;
+                        }
+                        if (config.Level == "easy" && item.Value == "1")
+                        {
+                            continue;
+                        }
+                        string url = $"https://leetcode.cn{item.Key}";
+                        browser.LoadUrl(url);
+                        Status.Content = "读题";
+                        await Task.Delay(5000);
+                        string solution = await Solve();
+                        bool res = false;
+                        if (!String.IsNullOrEmpty(solution))
+                        {
+                            Status.Content = "解答提交";
+                            for (int i = 3; i > 0; i--)
                             {
-                                await Sumbit();
-                                break;
+                                await Execute();
+                                await Task.Delay(3000);
+                                res = await GetStatus();
+                                if (res)
+                                {
+                                    await Sumbit();
+                                    break;
+                                }
                             }
                         }
-                    }
-                    else
-                    {
-                        Status.Content = "解答失败";
-                    }
-                    totalCount++;
-                    Count.Content = $"{correctCount}/{totalCount}";
-                    string id = string.Empty;
-                    Match match = Regex.Match(title, @"^\d+");
+                        else
+                        {
+                            Status.Content = "解答失败";
+                        }
+                        totalCount++;
+                        Count.Content = $"{correctCount}/{totalCount}";
+                        string id = string.Empty;
+                        Match match = Regex.Match(title, @"^\d+");
 
-                    if (match.Success)
-                    {
-                        id = match.Value;
-                    }
-                    else
-                    {
-                        Logger.Log.Debug("No number found at the beginning of the string.");
-                    }
-                    Dictionary<string, string> record = new Dictionary<string, string>
-                    {
-                        ["Page"] = StartNumber.Text,
-                        ["ID"] = id,
-                        ["Url"] = url,
-                        ["Title"] = title,
-                        ["Problem"] = problem,
-                        ["Solution"] = solution,
-                        ["Solve"] = res.ToString()
-                    };
-                    using (StreamWriter writer = new StreamWriter(filePath, true)) // 注意这里的第三个参数为true
-                    {
+                        if (match.Success)
+                        {
+                            id = match.Value;
+                        }
+                        else
+                        {
+                            Logger.Log.Debug("No number found at the beginning of the string.");
+                        }
+                        Dictionary<string, string> record = new Dictionary<string, string>
+                        {
+                            ["Page"] = StartNumber.Text,
+                            ["ID"] = id,
+                            ["Url"] = url,
+                            ["Difficulty"] = item.Value,
+                            ["Title"] = title,
+                            ["Problem"] = problem,
+                            ["Solution"] = solution,
+                            ["Abstract"] = _abstract,
+                            ["Solve"] = res.ToString()
+                        };
+                        using (StreamWriter writer = new StreamWriter(filePath, true)) // 注意这里的第三个参数为true
+                        {
 
-                        string line = JsonConvert.SerializeObject(record);
-                        writer.WriteLine(line);
+                            string line = JsonConvert.SerializeObject(record);
+                            writer.WriteLine(line);
+                        }
+
+                        if (cnt == 0)
+                        {
+                            break;
+                        }
                     }
-                    cnt -= 1;
-                    if (cnt == 0)
-                    {
-                        break;
-                    }
+                    StartNumber.Text = (Convert.ToInt16(StartNumber.Text) + 1).ToString();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Error(ex.Message);
                 }
             }
-            catch (Exception ex)
-            {
-                Logger.Log.Error(ex.Message);
-            }
+
         }
 
         private async Task<string> GetCodes()
@@ -298,12 +315,13 @@ namespace AutoLeetcode
         }
         private void CleanRegion()
         {
-            int x = Convert.ToInt16(this.Left + this.ActualWidth - 200);
+            int x = Convert.ToInt16(this.Left + this.ActualWidth + 300);
             int y = Convert.ToInt16(this.Top + 500);
+            Thread.Sleep(500);
             MouseHookHelper.SetCursorPos(x, y);
             MouseHookHelper.mouse_event(MouseHookHelper.MOUSEEVENTF_LEFTDOWN, x, y, 0, 0);
             MouseHookHelper.mouse_event(MouseHookHelper.MOUSEEVENTF_LEFTUP, x, y, 0, 0);
-            Thread.Sleep(500);
+
             KeyboardSimulator.SendCtrlA();
             KeyboardSimulator.SendCtrlX();
             KeyboardSimulator.ReleaseCtrl();
@@ -311,16 +329,21 @@ namespace AutoLeetcode
         private async Task<string> Solve()
         {
             string solution = "";
+            _abstract = "";
             await Task.Delay(1000);
             GetProblem();
             ChoosePython3();
             code = await GetCodes();
-            CleanRegion();
-            string current = await GetCodes();
-            if (!string.IsNullOrEmpty(current))
+            for (int i = 0; i < 5; i++)
             {
                 CleanRegion();
+                string current = await GetCodes();
+                if (string.IsNullOrEmpty(current))
+                {
+                    break;
+                }
             }
+
             try
             {
                 Status.Content = "AI处理中";
@@ -348,7 +371,12 @@ namespace AutoLeetcode
                     }
 
                     solution = response["solution"];
+                    if (!solution.Contains("class Solution"))
+                    {
+                        solution = "class Solution:\n" + solution;
+                    }
                     solution = Regex.Replace(solution, @"[\u4e00-\u9fa5]", "");
+                    _abstract = response["abstract"];
                 }
                 try
                 {
