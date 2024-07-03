@@ -1,0 +1,9 @@
+{
+    "BaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+    "ApiKey": "sk-****",
+    "Model": "qwen2-72b-instruct",
+    "Level": "hard",
+    "Skip": false,
+    "Count": 100,
+    "StartPage": 1
+}
