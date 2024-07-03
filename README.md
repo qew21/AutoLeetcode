@@ -10,7 +10,8 @@
 1. 下载匹配Chrome浏览器版本的[driver](https://googlechromelabs.github.io/chrome-for-testing/#stable)
 2. 将driver放到当前目录下
 3. 参考如下配置修改配置中的ApiKey和BaseUrl等参数
-4. 处于登录状态时，会自动跳转到登录页面，登录成功后会自动跳转到题目页面
+4. 安装依赖，运行 ```python main.py```
+5. 处于登录状态时，会自动跳转到登录页面，登录成功后会自动跳转到题目页面
 ```json5
 {
     "BaseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",  // dashscope api url
@@ -37,6 +38,7 @@ It appears that even top-tier large models struggle to achieve high accuracy on 
 1. Download the driver [here](https://googlechromelabs.github.io/chrome-for-testing/#stable) that matches your Chrome browser version.
 2. Place the driver in the current directory.
 3. Create a `config.json` file based on example below, modifying parameters such as ApiKey and BaseUrl.
-4. When in a logged-out state, the system will automatically redirect to the login page; after successful login, it will automatically navigate to the problem page.
+4. Install requirements and run ```python main.py```
+5. When in a logged-out state, the system will automatically redirect to the login page; after successful login, it will automatically navigate to the problem page.
 
 

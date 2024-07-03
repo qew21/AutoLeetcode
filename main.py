@@ -7,10 +7,9 @@ import time
 from loguru import logger
 from selenium import webdriver
 from selenium.webdriver import ActionChains
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 import pyperclip
 from selenium.webdriver.common.keys import Keys
 from config import config
@@ -29,11 +28,11 @@ def init_chrome_driver() -> webdriver.Chrome:
     return driver
 
 
-def choose_python3(driver):
+def choose_python3(driver: webdriver.Chrome):
     try:
         language_path = "//div[starts-with(@id, 'headlessui-popover-button-:r1')]"
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, language_path)))
+            ec.presence_of_element_located((By.XPATH, language_path)))
         language = driver.find_element(by=By.XPATH, value=language_path)
         if language.text != 'Python3':
             language.click()
@@ -43,7 +42,7 @@ def choose_python3(driver):
         logger.error(e)
 
 
-def solve(driver, problem_url: str) -> dict:
+def solve(driver: webdriver.Chrome, problem_url: str) -> dict:
     result = {}
     driver.get(problem_url)
     choose_python3(driver)
@@ -56,10 +55,9 @@ def solve(driver, problem_url: str) -> dict:
     try:
         code_area = (driver.find_element(value='editor', by=By.ID)
                      .find_element(by=By.CLASS_NAME, value='monaco-mouse-cursor-text'))
-        logger.debug(code_area.text)
         response = get_response(title, problem, code_area.text)
         if response:
-            logger.debug(response)
+            logger.info(response)
             result.update(response)
             solution = response['solution']
             actions = ActionChains(driver)
@@ -77,15 +75,15 @@ def solve(driver, problem_url: str) -> dict:
             element.click()
 
             # wait for result
-            green_element_located = EC.presence_of_element_located((By.CSS_SELECTOR, '.rounded-full.bg-red-s'))
-            red_element_located = EC.presence_of_element_located((By.CSS_SELECTOR, '.rounded-full.bg-green-s'))
-            element_located = EC.any_of(green_element_located, red_element_located)
+            green_element_located = ec.presence_of_element_located((By.CSS_SELECTOR, '.rounded-full.bg-red-s'))
+            red_element_located = ec.presence_of_element_located((By.CSS_SELECTOR, '.rounded-full.bg-green-s'))
+            element_located = ec.any_of(green_element_located, red_element_located)
             WebDriverWait(driver, 60).until(element_located)
             green = len(driver.find_elements(By.CSS_SELECTOR, '.rounded-full.bg-green-s'))
             red = len(driver.find_elements(By.CSS_SELECTOR, '.rounded-full.bg-red-s'))
             element = driver.find_element(By.CSS_SELECTOR, '[data-e2e-locator="console-submit-button"]')
             element.click()
-            result['status'] = None
+            result['status'] = ''
             # submit when no error occurs
             if green > 0 and red == 0:
                 status = driver.find_element(By.CSS_SELECTOR, '.text-green-s')
@@ -95,26 +93,25 @@ def solve(driver, problem_url: str) -> dict:
     return result
 
 
-def check_login(driver):
+def check_login(driver: webdriver.Chrome):
     try:
         login_button = driver.find_element(By.ID, 'navbar_sign_in_button')
         if login_button:
             url = 'https://leetcode.cn/accounts/login/?next=%2F'
             driver.get(url)
-            logger.debug('Wait for login')
+            logger.info('Wait for login...')
             WebDriverWait(driver, 300).until(
-                EC.url_changes(url)
+                ec.url_changes(url)
             )
-            logger.debug('Login success')
-    except:
-        logger.debug('Already login')
+            logger.info('Login success')
+    except Exception as e:
+        logger.debug(f'Already login: {e}')
 
 
 def main():
     driver = init_chrome_driver()
 
     filename = datetime.datetime.now().strftime('%Y_%m_%d_%H_%M_%S') + '.jsonl'
-    logger.debug(filename)
     cnt = config.Count
     try:
         while cnt > 0:
@@ -123,7 +120,8 @@ def main():
             time.sleep(5)
             if cnt == config.Count:
                 check_login(driver)
-            problems = driver.find_elements(By.CSS_SELECTOR, "[role='rowgroup']")[2].find_elements(By.XPATH, "./*")
+            problems = (driver.find_elements(By.CSS_SELECTOR, "[role='rowgroup']")[2]
+                        .find_elements(By.XPATH, "./*"))
             data = []
             for i, problem in enumerate(problems):
                 if not problem:
@@ -133,7 +131,6 @@ def main():
                 difficulty = children[4].text.strip()
                 tag = children[0].find_elements(By.XPATH, "./*")
                 link = problem.find_element(By.XPATH, ".//a").get_attribute("href")
-                logger.debug(f"{i + 1} {difficulty} {tag} {link}")
                 if config.Skip and len(tag):
                     continue
                 if 'envId' in link:
